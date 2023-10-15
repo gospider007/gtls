@@ -1,3 +1,3 @@
-module github.com/baixudong007/gtls
+module github.com/gospider007/gtls
 
 go 1.21.1
