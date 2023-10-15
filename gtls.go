@@ -111,7 +111,6 @@ func GetServerName(addr string) string {
 	return host
 }
 
-// 生成根证书
 func CreateRootCert(key *ecdsa.PrivateKey) (*x509.Certificate, error) {
 	beforDate, err := time.ParseInLocation(time.DateOnly, "2023-03-20", time.Local)
 	if err != nil {
@@ -147,7 +146,6 @@ func CreateRootCert(key *ecdsa.PrivateKey) (*x509.Certificate, error) {
 	return x509.ParseCertificate(rootDer)
 }
 
-// 生成私钥
 func CreateCertKey() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 }
