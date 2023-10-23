@@ -16,7 +16,28 @@ import (
 	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/caddyserver/certmagic"
 )
+
+type Acme struct {
+	cfg *certmagic.Config
+}
+
+func (obj *Acme) TLSConfig(nextProtos []string) *tls.Config {
+	config := obj.cfg.TLSConfig()
+	if nextProtos == nil {
+		config.NextProtos = append(config.NextProtos, "h2", "http/1.1")
+	} else {
+		config.NextProtos = append(config.NextProtos, nextProtos...)
+	}
+	return config
+}
+func CreateAcme(domainName string, email string) (*Acme, error) {
+	cfg := certmagic.NewDefault()
+	certmagic.DefaultACME.Email = email
+	return &Acme{cfg: cfg}, cfg.ManageSync(nil, []string{domainName})
+}
 
 //go:embed ssl/gospider.crt
 var CrtFile []byte
