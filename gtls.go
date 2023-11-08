@@ -12,7 +12,6 @@ import (
 	"errors"
 	"math/big"
 	"net"
-	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -119,10 +118,6 @@ func VerifyProxy(proxyUrl string) (*url.URL, error) {
 	default:
 		return nil, err
 	}
-}
-
-func GetContentTypeWithBytes(content []byte) string {
-	return http.DetectContentType(content)
 }
 func GetServerName(addr string) string {
 	host, _, err := net.SplitHostPort(addr)
