@@ -44,16 +44,6 @@ var CrtFile []byte
 //go:embed ssl/gospider.key
 var KeyFile []byte
 
-func ParseIp(ip net.IP) int {
-	if ip != nil {
-		if ip4 := ip.To4(); ip4 != nil {
-			return 4
-		} else if ip6 := ip.To16(); ip6 != nil {
-			return 6
-		}
-	}
-	return 0
-}
 func SplitHostPort(address string) (string, int, error) {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
@@ -77,35 +67,6 @@ func ParseHost(host string) (net.IP, int) {
 		}
 	}
 	return nil, 0
-}
-
-func GetHost(addrTypes ...int) net.IP {
-	hosts := GetHosts(addrTypes...)
-	if len(hosts) == 0 {
-		return nil
-	} else {
-		return hosts[0]
-	}
-}
-func GetHosts(addrTypes ...int) []net.IP {
-	var addrType int
-	if len(addrTypes) > 0 {
-		addrType = addrTypes[0]
-	}
-	result := []net.IP{}
-	lls, err := net.InterfaceAddrs()
-	if err != nil {
-		return result
-	}
-	for _, ll := range lls {
-		mm, ok := ll.(*net.IPNet)
-		if ok && mm.IP.IsPrivate() {
-			if addrType == 0 || ParseIp(mm.IP) == addrType {
-				result = append(result, mm.IP)
-			}
-		}
-	}
-	return result
 }
 func VerifyProxy(proxyUrl string) (*url.URL, error) {
 	proxy, err := url.Parse(proxyUrl)
