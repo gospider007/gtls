@@ -245,9 +245,9 @@ func LoadCert(data []byte) (*x509.Certificate, error) {
 type AddrType int
 
 const (
-	Auto AddrType = 0
-	Ipv4 AddrType = 4
-	Ipv6 AddrType = 6
+	Auto AddrType = iota
+	Ipv4
+	Ipv6
 )
 
 func ParseIp(ip net.IP) AddrType {
