@@ -69,7 +69,7 @@ func VerifyProxy(proxyUrl string) (*url.URL, error) {
 	}
 	switch proxy.Scheme {
 	case "http", "socks5", "https":
-		
+
 		return proxy, nil
 	default:
 		return nil, errors.New("unsupported proxy scheme: " + proxy.Scheme)
