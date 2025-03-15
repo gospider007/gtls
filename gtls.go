@@ -120,7 +120,7 @@ func CreateRootCert() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 	caCert, _ := x509.ParseCertificate(caCertBytes)
 	return caCert, caPrivKey, nil
 }
-func CreateCertWithAddr(address ...net.IP) (tls.Certificate, error) {
+func CreateCertWithName(serverName string) (tls.Certificate, error) {
 	caCert, err := LoadCert(CrtFile)
 	if err != nil {
 		return tls.Certificate{}, err
@@ -146,7 +146,11 @@ func CreateCertWithAddr(address ...net.IP) (tls.Certificate, error) {
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
-		IPAddresses:           address,
+	}
+	if serverName == "" {
+		serverTemplate.IPAddresses = []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback}
+	} else {
+		serverTemplate.DNSNames = []string{serverName}
 	}
 
 	// 生成服务器私钥（ECDSA 更快，RSA 兼容性更好）
@@ -161,6 +165,20 @@ func CreateCertWithAddr(address ...net.IP) (tls.Certificate, error) {
 	}
 	serverCert, _ := x509.ParseCertificate(serverCertBytes)
 	return tls.X509KeyPair(GetCertData(serverCert), GetCertKeyData(serverPrivKey))
+}
+
+func GetCertConfigForClient(config *tls.Config) *tls.Config {
+	return &tls.Config{
+		GetConfigForClient: func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
+			cert, err := CreateCertWithName(chi.ServerName)
+			if err != nil {
+				return nil, err
+			}
+			cf := config.Clone()
+			cf.Certificates = []tls.Certificate{cert}
+			return cf, nil
+		},
+	}
 }
 func MergeCert(cert *x509.Certificate, key *ecdsa.PrivateKey) (tls.Certificate, error) {
 	return tls.X509KeyPair(GetCertData(cert), GetCertKeyData(key))
