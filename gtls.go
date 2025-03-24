@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/caddyserver/certmagic"
@@ -167,15 +168,21 @@ func CreateCertWithName(serverName string) (tls.Certificate, error) {
 	return tls.X509KeyPair(GetCertData(serverCert), GetCertKeyData(serverPrivKey))
 }
 
+var cacheCert sync.Map
+
 func GetCertConfigForClient(config *tls.Config) *tls.Config {
 	return &tls.Config{
 		GetConfigForClient: func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
+			if certData, ok := cacheCert.Load(chi.ServerName); ok {
+				return certData.(*tls.Config), nil
+			}
 			cert, err := CreateCertWithName(chi.ServerName)
 			if err != nil {
 				return nil, err
 			}
 			cf := config.Clone()
 			cf.Certificates = []tls.Certificate{cert}
+			cacheCert.Store(chi.ServerName, cf)
 			return cf, nil
 		},
 	}
