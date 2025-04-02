@@ -209,21 +209,37 @@ func LoadCert(data []byte) (*x509.Certificate, error) {
 
 type AddrType int
 
+func (at AddrType) String() string {
+	switch at {
+	case AutoIp:
+		return "AutoIp"
+	case Ipv4:
+		return "Ipv4"
+	case Ipv6:
+		return "Ipv6"
+	case UnknownIp:
+		return "UnknownIp"
+	default:
+		return "Undefined"
+	}
+}
+
 const (
-	Auto AddrType = iota
+	AutoIp AddrType = iota
 	Ipv4
 	Ipv6
+	UnknownIp
 )
 
 func ParseIp(ip net.IP) AddrType {
 	if ip != nil {
 		if ip4 := ip.To4(); ip4 != nil {
-			return 4
+			return Ipv4
 		} else if ip6 := ip.To16(); ip6 != nil {
-			return 6
+			return Ipv6
 		}
 	}
-	return 0
+	return UnknownIp
 }
 func GetHost(addrTypes ...AddrType) net.IP {
 	hosts := GetHosts(addrTypes...)
