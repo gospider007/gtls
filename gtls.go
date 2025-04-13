@@ -12,7 +12,6 @@ import (
 	"errors"
 	"math/big"
 	"net"
-	"net/http"
 	"net/url"
 	"strconv"
 	"sync"
@@ -23,13 +22,7 @@ import (
 
 var Https = certmagic.HTTPS
 
-func HTTPS(domainNames []string, mux http.Handler) error {
-	return certmagic.HTTPS(domainNames, mux)
-}
-func Listen(domainNames []string) (net.Listener, error) {
-	return certmagic.Listen(domainNames)
-}
-func TLS(domainNames []string) (*tls.Config, error) {
+func MagicTLS(domainNames []string) (*tls.Config, error) {
 	return certmagic.TLS(domainNames)
 }
 
