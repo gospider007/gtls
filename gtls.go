@@ -37,6 +37,9 @@ func SplitHostPort(address string) (string, int, error) {
 	if err != nil {
 		return "", 0, err
 	}
+	if host == "" {
+		host = address
+	}
 	portnum, err := strconv.Atoi(port)
 	if err != nil {
 		return "", 0, err
@@ -72,6 +75,9 @@ func VerifyProxy(proxyUrl string) (*url.URL, error) {
 func GetServerName(addr string) string {
 	host, _, err := net.SplitHostPort(addr)
 	if err != nil {
+		return addr
+	}
+	if host == "" {
 		return addr
 	}
 	return host
