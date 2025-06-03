@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -66,9 +67,16 @@ func VerifyProxy(proxyUrl string) (*url.URL, error) {
 	}
 	switch proxy.Scheme {
 	case "http", "socks5", "https":
-
 		return proxy, nil
 	default:
+		if strings.Count(proxy.Scheme, "+") == 1 {
+			switch strings.Split(proxy.Scheme, "+")[1] {
+			case "http", "socks5", "https":
+				return proxy, nil
+			default:
+				return nil, errors.New("unsupported proxy scheme: " + proxy.Scheme)
+			}
+		}
 		return nil, errors.New("unsupported proxy scheme: " + proxy.Scheme)
 	}
 }
