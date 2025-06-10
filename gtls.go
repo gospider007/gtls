@@ -66,12 +66,12 @@ func VerifyProxy(proxyUrl string) (*url.URL, error) {
 		return nil, err
 	}
 	switch proxy.Scheme {
-	case "http", "socks5", "https":
+	case "http", "socks5", "https", "ssh":
 		return proxy, nil
 	default:
 		if strings.Count(proxy.Scheme, "+") == 1 {
 			switch strings.Split(proxy.Scheme, "+")[1] {
-			case "http", "socks5", "https":
+			case "http", "socks5", "https", "ssh":
 				return proxy, nil
 			default:
 				return nil, errors.New("unsupported proxy scheme: " + proxy.Scheme)
