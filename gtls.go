@@ -1,6 +1,7 @@
 package gtls
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -24,7 +25,10 @@ import (
 var Https = certmagic.HTTPS
 
 func MagicTLS(domainNames []string) (*tls.Config, error) {
-	return certmagic.TLS(domainNames)
+	certmagic.DefaultACME.CA = certmagic.LetsEncryptProductionCA
+	certmagic.DefaultACME.Agreed = true
+	cfg := certmagic.NewDefault()
+	return cfg.TLSConfig(), cfg.ManageSync(context.Background(), domainNames)
 }
 
 //go:embed ssl/gospider.crt
