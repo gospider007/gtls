@@ -37,6 +37,13 @@ var CrtFile []byte
 //go:embed ssl/gospider.key
 var KeyFile []byte
 
+var caCert *x509.Certificate
+var caPrivKey *ecdsa.PrivateKey
+
+func init() {
+	caCert, _ = LoadCert(CrtFile)
+	caPrivKey, _ = LoadCertKey(KeyFile)
+}
 func SplitHostPort(address string) (string, int, error) {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
@@ -132,14 +139,13 @@ func CreateRootCert() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 	caCert, _ := x509.ParseCertificate(caCertBytes)
 	return caCert, caPrivKey, nil
 }
+
+var certCache sync.Map
+
 func CreateCertWithName(serverName string) (tls.Certificate, error) {
-	caCert, err := LoadCert(CrtFile)
-	if err != nil {
-		return tls.Certificate{}, err
-	}
-	caPrivKey, err := LoadCertKey(KeyFile)
-	if err != nil {
-		return tls.Certificate{}, err
+	value, ok := certCache.Load(serverName)
+	if ok {
+		return value.(tls.Certificate), nil
 	}
 	serialNumber, err := generateSerialNumber()
 	if err != nil {
@@ -176,24 +182,23 @@ func CreateCertWithName(serverName string) (tls.Certificate, error) {
 		return tls.Certificate{}, err
 	}
 	serverCert, _ := x509.ParseCertificate(serverCertBytes)
-	return tls.X509KeyPair(GetCertData(serverCert), GetCertKeyData(serverPrivKey))
+	cert, err := tls.X509KeyPair(GetCertData(serverCert), GetCertKeyData(serverPrivKey))
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	certCache.Store(serverName, cert)
+	return cert, nil
 }
-
-var cacheCert sync.Map
 
 func GetCertConfigForClient(config *tls.Config) *tls.Config {
 	return &tls.Config{
 		GetConfigForClient: func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
-			if certData, ok := cacheCert.Load(chi.ServerName); ok {
-				return certData.(*tls.Config), nil
-			}
 			cert, err := CreateCertWithName(chi.ServerName)
 			if err != nil {
 				return nil, err
 			}
 			cf := config.Clone()
 			cf.Certificates = []tls.Certificate{cert}
-			cacheCert.Store(chi.ServerName, cf)
 			return cf, nil
 		},
 	}
@@ -213,6 +218,7 @@ func LoadCertKey(data []byte) (*ecdsa.PrivateKey, error) {
 	block, _ := pem.Decode(data)
 	return x509.ParseECPrivateKey(block.Bytes)
 }
+
 func LoadCert(data []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(data)
 	return x509.ParseCertificate(block.Bytes)
