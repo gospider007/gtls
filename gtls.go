@@ -142,14 +142,14 @@ func CreateRootCert() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 
 var certCache sync.Map
 
-func CreateCertWithName(serverName string) (tls.Certificate, error) {
+func CreateCertWithName(serverName string) (*tls.Certificate, error) {
 	value, ok := certCache.Load(serverName)
 	if ok {
-		return value.(tls.Certificate), nil
+		return value.(*tls.Certificate), nil
 	}
 	serialNumber, err := generateSerialNumber()
 	if err != nil {
-		return tls.Certificate{}, err
+		return nil, err
 	}
 	// 服务器证书模板
 	serverTemplate := &x509.Certificate{
@@ -174,34 +174,24 @@ func CreateCertWithName(serverName string) (tls.Certificate, error) {
 	// 生成服务器私钥（ECDSA 更快，RSA 兼容性更好）
 	serverPrivKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
 	if err != nil {
-		return tls.Certificate{}, err
+		return nil, err
 	}
 	// 用 CA 签发服务器证书
 	serverCertBytes, err := x509.CreateCertificate(rand.Reader, serverTemplate, caCert, &serverPrivKey.PublicKey, caPrivKey)
 	if err != nil {
-		return tls.Certificate{}, err
+		return nil, err
 	}
 	serverCert, _ := x509.ParseCertificate(serverCertBytes)
 	cert, err := tls.X509KeyPair(GetCertData(serverCert), GetCertKeyData(serverPrivKey))
 	if err != nil {
-		return tls.Certificate{}, err
+		return nil, err
 	}
-	certCache.Store(serverName, cert)
-	return cert, nil
+	certCache.Store(serverName, &cert)
+	return &cert, nil
 }
 
-func GetCertConfigForClient(config *tls.Config) *tls.Config {
-	return &tls.Config{
-		GetConfigForClient: func(chi *tls.ClientHelloInfo) (*tls.Config, error) {
-			cert, err := CreateCertWithName(chi.ServerName)
-			if err != nil {
-				return nil, err
-			}
-			cf := config.Clone()
-			cf.Certificates = []tls.Certificate{cert}
-			return cf, nil
-		},
-	}
+func GetCertificate(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
+	return CreateCertWithName(chi.ServerName)
 }
 func MergeCert(cert *x509.Certificate, key *ecdsa.PrivateKey) (tls.Certificate, error) {
 	return tls.X509KeyPair(GetCertData(cert), GetCertKeyData(key))
