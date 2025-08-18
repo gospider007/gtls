@@ -140,12 +140,15 @@ func CreateRootCert() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 	return caCert, caPrivKey, nil
 }
 
-var certCache sync.Map
+var certCache = map[string]*tls.Certificate{}
+var certLock sync.Mutex
 
 func CreateCertWithName(serverName string) (*tls.Certificate, error) {
-	value, ok := certCache.Load(serverName)
+	certLock.Lock()
+	defer certLock.Unlock()
+	value, ok := certCache[serverName]
 	if ok {
-		return value.(*tls.Certificate), nil
+		return value, nil
 	}
 	serialNumber, err := generateSerialNumber()
 	if err != nil {
@@ -181,13 +184,11 @@ func CreateCertWithName(serverName string) (*tls.Certificate, error) {
 	if err != nil {
 		return nil, err
 	}
-	serverCert, _ := x509.ParseCertificate(serverCertBytes)
-	cert, err := tls.X509KeyPair(GetCertData(serverCert), GetCertKeyData(serverPrivKey))
-	if err != nil {
-		return nil, err
+	cert := &tls.Certificate{
+		Certificate: [][]byte{serverCertBytes},
+		PrivateKey:  serverPrivKey,
 	}
-	certCache.Store(serverName, &cert)
-	return &cert, nil
+	return cert, nil
 }
 
 func GetCertificate(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
