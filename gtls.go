@@ -31,18 +31,11 @@ func MagicTLS(domainNames []string) (*tls.Config, error) {
 	return cfg.TLSConfig(), cfg.ManageSync(context.Background(), domainNames)
 }
 
-//go:embed ssl/gospider.crt
-var CrtFile []byte
-
-//go:embed ssl/gospider.key
-var KeyFile []byte
-
 var caCert *x509.Certificate
 var caPrivKey *ecdsa.PrivateKey
 
 func init() {
-	caCert, _ = LoadCert(CrtFile)
-	caPrivKey, _ = LoadCertKey(KeyFile)
+	caCert, caPrivKey, _ = CreateRootCert()
 }
 func SplitHostPort(address string) (string, int, error) {
 	host, port, err := net.SplitHostPort(address)
@@ -143,7 +136,13 @@ func CreateRootCert() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 var certCache = map[string]*tls.Certificate{}
 var certLock sync.Mutex
 
-func CreateCertWithName(serverName string) (*tls.Certificate, error) {
+func CreateCertWithName(serverName string, rootCert *x509.Certificate, rootKey *ecdsa.PrivateKey) (*tls.Certificate, error) {
+	if rootCert == nil && rootKey == nil {
+		rootCert = caCert
+		rootKey = caPrivKey
+	} else if rootCert == nil || rootKey == nil {
+		return nil, errors.New("rootCert or rootKey is nil")
+	}
 	certLock.Lock()
 	defer certLock.Unlock()
 	value, ok := certCache[serverName]
@@ -191,8 +190,8 @@ func CreateCertWithName(serverName string) (*tls.Certificate, error) {
 	return cert, nil
 }
 
-func GetCertificate(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
-	return CreateCertWithName(chi.ServerName)
+func GetCertificate(chi *tls.ClientHelloInfo, rootCert *x509.Certificate, rootKey *ecdsa.PrivateKey) (*tls.Certificate, error) {
+	return CreateCertWithName(chi.ServerName, rootCert, rootKey)
 }
 func MergeCert(cert *x509.Certificate, key *ecdsa.PrivateKey) (tls.Certificate, error) {
 	return tls.X509KeyPair(GetCertData(cert), GetCertKeyData(key))

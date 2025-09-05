@@ -2,7 +2,7 @@ module github.com/gospider007/gtls
 
 go 1.25
 
-require github.com/caddyserver/certmagic v0.24.0
+require github.com/caddyserver/certmagic v0.25.0
 
 require (
 	github.com/caddyserver/zerossl v0.1.3 // indirect
@@ -10,7 +10,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/libdns/libdns v1.1.1 // indirect
-	github.com/mholt/acmez/v3 v3.1.2 // indirect
+	github.com/mholt/acmez/v3 v3.1.3 // indirect
 	github.com/miekg/dns v1.1.68 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/stretchr/testify v1.10.0 // indirect
