@@ -20,6 +20,8 @@ import (
 	"time"
 
 	"github.com/caddyserver/certmagic"
+	"github.com/gospider007/ja3"
+	utls "github.com/refraction-networking/utls"
 )
 
 var Https = certmagic.HTTPS
@@ -275,4 +277,22 @@ func GetHosts(addrTypes ...AddrType) []net.IP {
 		}
 	}
 	return result
+}
+
+func AddTls(ctx context.Context, conn net.Conn, host string, tlsConfig *tls.Config, forceHttp1 bool) (*tls.Conn, error) {
+	var tlsConn *tls.Conn
+	tlsConfig.ServerName = GetServerName(host)
+	if forceHttp1 {
+		tlsConfig.NextProtos = []string{"http/1.1"}
+	} else {
+		tlsConfig.NextProtos = []string{"h2", "http/1.1"}
+	}
+	tlsConn = tls.Client(conn, tlsConfig)
+	return tlsConn, tlsConn.HandshakeContext(ctx)
+}
+
+var specClient = ja3.NewClient()
+
+func AddJa3Tls(ctx context.Context, conn net.Conn, host string, spec *ja3.Spec, tlsConfig *utls.Config, forceHttp1 bool) (*utls.UConn, error) {
+	return specClient.Client(ctx, conn, spec, tlsConfig, GetServerName(host), forceHttp1)
 }
