@@ -293,6 +293,6 @@ func AddTls(ctx context.Context, conn net.Conn, host string, tlsConfig *tls.Conf
 
 var specClient = ja3.NewClient()
 
-func AddJa3Tls(ctx context.Context, conn net.Conn, host string, spec *ja3.Spec, tlsConfig *utls.Config, forceHttp1 bool) (*utls.UConn, error) {
+func AddJa3Tls(ctx context.Context, conn net.Conn, host string, spec *ja3.TlsSpec, tlsConfig *utls.Config, forceHttp1 bool) (*utls.UConn, error) {
 	return specClient.Client(ctx, conn, spec, tlsConfig, GetServerName(host), forceHttp1)
 }
