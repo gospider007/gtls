@@ -139,11 +139,9 @@ var certCache = map[string]*tls.Certificate{}
 var certLock sync.Mutex
 
 func CreateCertWithName(serverName string, rootCert *x509.Certificate, rootKey *ecdsa.PrivateKey) (*tls.Certificate, error) {
-	if rootCert == nil && rootKey == nil {
+	if rootCert == nil || rootKey == nil {
 		rootCert = caCert
 		rootKey = caPrivKey
-	} else if rootCert == nil || rootKey == nil {
-		return nil, errors.New("rootCert or rootKey is nil")
 	}
 	certLock.Lock()
 	defer certLock.Unlock()
@@ -181,7 +179,7 @@ func CreateCertWithName(serverName string, rootCert *x509.Certificate, rootKey *
 		return nil, err
 	}
 	// 用 CA 签发服务器证书
-	serverCertBytes, err := x509.CreateCertificate(rand.Reader, serverTemplate, caCert, &serverPrivKey.PublicKey, caPrivKey)
+	serverCertBytes, err := x509.CreateCertificate(rand.Reader, serverTemplate, rootCert, &serverPrivKey.PublicKey, rootKey)
 	if err != nil {
 		return nil, err
 	}
@@ -189,6 +187,7 @@ func CreateCertWithName(serverName string, rootCert *x509.Certificate, rootKey *
 		Certificate: [][]byte{serverCertBytes},
 		PrivateKey:  serverPrivKey,
 	}
+	certCache[serverName] = cert
 	return cert, nil
 }
 
