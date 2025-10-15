@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/caddyserver/certmagic v0.25.0
 	github.com/gospider007/ja3 v0.0.0-20250908031106-827812269efe
-	github.com/refraction-networking/utls v1.8.0
+	github.com/refraction-networking/utls v1.8.1
 )
 
 require (
