@@ -11,16 +11,20 @@ import (
 	_ "embed"
 	"encoding/pem"
 	"errors"
+	"log"
 	"math/big"
 	"net"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/caddyserver/certmagic"
+	"github.com/gospider007/conf"
 	"github.com/gospider007/ja3"
+	"github.com/gospider007/tools"
 	utls "github.com/refraction-networking/utls"
 )
 
@@ -37,7 +41,60 @@ var caCert *x509.Certificate
 var caPrivKey *ecdsa.PrivateKey
 
 func init() {
-	caCert, caPrivKey, _ = CreateRootCert()
+	var err error
+	caCert, caPrivKey, err = LoadRootCertWithLocal(false)
+	if err != nil {
+		log.Panic(err)
+	}
+
+}
+
+func LoadRootCertWithLocal(random bool) (*x509.Certificate, *ecdsa.PrivateKey, error) {
+	certPath, keyPath, err := GetRootCertWithLocal(random)
+	if err != nil {
+		return nil, nil, err
+	}
+	certBytes, err := os.ReadFile(certPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	keyBytes, err := os.ReadFile(keyPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	cert, err := LoadCert(certBytes)
+
+	if err != nil {
+		return nil, nil, err
+	}
+	key, err := LoadCertKey(keyBytes)
+	if err != nil {
+		return nil, nil, err
+	}
+	return cert, key, nil
+}
+
+func GetRootCertWithLocal(random bool) (string, string, error) {
+	dir, err := conf.GetMainDirPath()
+	if err != nil {
+		return "", "", err
+	}
+	certPath := tools.PathJoin(dir, "cert.pem")
+	keyPath := tools.PathJoin(dir, "key.pem")
+	if tools.PathExist(certPath) && tools.PathExist(keyPath) && !random {
+		return certPath, keyPath, nil
+	}
+	cert, key, err := CreateRootCert()
+	if err != nil {
+		return certPath, keyPath, err
+	}
+	if err = os.WriteFile(certPath, GetCertData(cert), 0777); err != nil {
+		return certPath, keyPath, err
+	}
+	if err = os.WriteFile(keyPath, GetCertKeyData(key), 0777); err != nil {
+		return certPath, keyPath, err
+	}
+	return certPath, keyPath, nil
 }
 func SplitHostPort(address string) (string, int, error) {
 	host, port, err := net.SplitHostPort(address)
@@ -122,7 +179,7 @@ func CreateRootCert() (*x509.Certificate, *ecdsa.PrivateKey, error) {
 		BasicConstraintsValid: true,
 	}
 	// 生成 CA 私钥
-	caPrivKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	caPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -161,11 +218,11 @@ func CreateCertWithName(serverName string, rootCert *x509.Certificate, rootKey *
 			Organization:       []string{"MITM Proxy Co"},
 			OrganizationalUnit: []string{"MITM"},
 		},
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(100, 0, 0), // 1年有效期
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
+		NotBefore:          time.Now(),
+		NotAfter:           time.Now().AddDate(100, 0, 0), // 1年有效期
+		KeyUsage:           x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:        []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		SignatureAlgorithm: x509.ECDSAWithSHA256,
 	}
 	if serverName == "" {
 		serverTemplate.IPAddresses = []net.IP{net.IPv4(127, 0, 0, 1), net.IPv6loopback}
@@ -174,7 +231,7 @@ func CreateCertWithName(serverName string, rootCert *x509.Certificate, rootKey *
 	}
 
 	// 生成服务器私钥（ECDSA 更快，RSA 兼容性更好）
-	serverPrivKey, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+	serverPrivKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, err
 	}
