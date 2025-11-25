@@ -5,8 +5,8 @@ go 1.25.0
 require (
 	github.com/caddyserver/certmagic v0.25.0
 	github.com/gospider007/conf v0.0.0-20250815031235-1df45ae2e117
-	github.com/gospider007/ja3 v0.0.0-20251015151416-4e09dd8d00e8
-	github.com/gospider007/tools v0.0.0-20251010080832-0e5c6b21df2d
+	github.com/gospider007/ja3 v0.0.0-20251125071211-ddd81e24f19b
+	github.com/gospider007/tools v0.0.0-20251125071203-f60847ba60e8
 	github.com/refraction-networking/utls v1.8.1
 )
 
@@ -27,6 +27,7 @@ require (
 	github.com/libdns/libdns v1.1.1 // indirect
 	github.com/mholt/acmez/v3 v3.1.4 // indirect
 	github.com/miekg/dns v1.1.68 // indirect
+	github.com/mileusna/useragent v1.3.5 // indirect
 	github.com/minio/minlz v1.0.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.27.2 // indirect
 	github.com/refraction-networking/uquic v0.0.6 // indirect
