@@ -6,7 +6,7 @@ require (
 	github.com/caddyserver/certmagic v0.25.0
 	github.com/gospider007/conf v0.0.0-20250815031235-1df45ae2e117
 	github.com/gospider007/ja3 v0.0.0-20251128143112-df70723abd5c
-	github.com/gospider007/tools v0.0.0-20251128142908-5c87784b1dd2
+	github.com/gospider007/tools v0.0.0-20251203140650-43dee8a5c707
 	github.com/refraction-networking/utls v1.8.1
 )
 
